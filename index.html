@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Choropleth Map</title>
+    <title>COVID-19 Density Map</title>
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.13.0/mapbox-gl.js"></script>
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.13.0/mapbox-gl.css" rel="stylesheet" />
     <style>
@@ -33,7 +33,7 @@
 <body>
 
     <div id="map"></div>
-    <div id="text-description"><p>Hover over a state!</p></div>
+    <div id="text-description"><p>Hover over a county!</p></div>
     <div id="legend"></div>
 
     <script>
@@ -42,36 +42,31 @@
         const map = new mapboxgl.Map({
             container: 'map',
             style: 'mapbox://styles/mapbox/light-v10',
-            center: [-100, 40], 
-            zoom: 4
+            center: [-120.7401, 47.7511], 
+            zoom: 6
         });
 
         async function geojsonFetch() {
-            let response = await fetch('assets/state_data.geojson');
-            let stateData = await response.json();
+            let response = await fetch('assets/wa-covid-data-102521.geojson');
+            let covidData = await response.json();
 
             map.on('load', function loadingData() {
-                map.addSource('stateData', {
+                map.addSource('covidData', {
                     type: 'geojson',
-                    data: stateData
+                    data: covidData
                 });
 
                 map.addLayer({
-                    id: 'stateData-layer',
+                    id: 'covidData-layer',
                     type: 'fill',
-                    source: 'stateData',
+                    source: 'covidData',
                     paint: {
                         'fill-color': [
-                            'step',
-                            ['get', 'density'],
-                            '#FFEDA0', 10,
-                            '#FED976', 20,
-                            '#FEB24C', 50,
-                            '#FD8D3C', 100,
-                            '#FC4E2A', 200,
-                            '#E31A1C', 500,
-                            '#BD0026', 1000,
-                            "#800026"
+                            'step', ['get', 'casePer10k'],
+                            '#FFEDA0', 10, '#FED976', 50,
+                            '#FEB24C', 100, '#FD8D3C', 500,
+                            '#FC4E2A', 1000, '#E31A1C', 5000,
+                            '#BD0026', 10000, "#800026"
                         ],
                         'fill-opacity': 0.7,
                         'fill-outline-color': '#fff'
@@ -80,8 +75,8 @@
 
                 // Legend
                 const layers = [
-                    '0-9', '10-19', '20-49', '50-99', 
-                    '100-199', '200-499', '500-999', '1000+'
+                    '0-10', '10-50', '50-100', '100-500', 
+                    '500-1000', '1000-5000', '5000-10000', '10000+'
                 ];
                 const colors = [
                     '#FFEDA0', '#FED976', '#FEB24C', '#FD8D3C',
@@ -98,10 +93,11 @@
 
             // Tooltip interaction
             map.on('mousemove', ({point}) => {
-                const state = map.queryRenderedFeatures(point, { layers: ['stateData-layer'] });
-                document.getElementById('text-description').innerHTML = state.length ?
-                    `<h3>${state[0].properties.name}</h3><p><strong><em>${state[0].properties.density}</strong> people per square mile</em></p>` :
-                    `<p>Hover over a state!</p>`;
+                const county = map.queryRenderedFeatures(point, { layers: ['covidData-layer'] });
+                document.getElementById('text-description').innerHTML = county.length ?
+                    `<h3>${county[0].properties.county_name}</h3>
+                    <p><strong>${county[0].properties.cases_per_100k}</strong> cases per 100,000</p>` :
+                    `<p>Hover over a county!</p>`;
             });
         }
 
@@ -110,5 +106,3 @@
 
 </body>
 </html>
-
-
